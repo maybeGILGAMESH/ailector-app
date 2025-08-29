@@ -8,6 +8,14 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     ffmpeg \
     curl \
+    espeak \
+    espeak-data \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Создание рабочей директории
@@ -21,7 +29,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Создание необходимых директорий
-RUN mkdir -p /app/uploads /app/outputs /app/logs
+RUN mkdir -p /app/uploads /app/outputs /app/logs /app/temp
 
 # Установка прав
 RUN chmod +x /app/start.sh

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - Courses Generator{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Заголовок проекта -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Дашборд</a></li>
+                    <li class="breadcrumb-item active">{{ project.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Основная информация -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>{{ project.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if project.description %}
+                        <p class="text-muted">{{ project.description }}</p>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>Создан: {{ project.created_at.strftime('%d.%m.%Y %H:%M') }}
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="badge bg-{{ 'success' if project.status == 'completed' else 'warning' if project.status == 'processing' else 'secondary' }}">
+                                {{ project.status }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Загрузка файлов -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Загрузка контента
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="video" class="form-label">
+                                    <i class="fas fa-video me-1"></i>Видео файл *
+                                </label>
+                                <input type="file" class="form-control" id="video" name="video" 
+                                       accept="video/*" required>
+                                <div class="form-text">Выберите видео с человеком, говорящим</div>
+                                {% if project.video_path %}
+                                    <div class="form-text text-success">
+                                        <i class="fas fa-check me-1"></i>Видео загружено
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="text_content" class="form-label">
+                                    <i class="fas fa-font me-1"></i>Текст для озвучивания *
+                                </label>
+                                <textarea class="form-control" id="text_content" name="text_content" 
+                                          rows="4" placeholder="Введите текст, который должен сказать человек в видео" required>{{ project.text_content or '' }}</textarea>
+                                <div class="form-text">Текст будет преобразован в речь и синхронизирован с видео</div>
+                                {% if project.text_content %}
+                                    <div class="form-text text-success">
+                                        <i class="fas fa-check me-1"></i>Текст сохранен
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i>Загрузить контент
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Обработка -->
+            {% if project.video_path and project.text_content %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>Обработка
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Процесс обработки:</strong>
+                            <ol class="mb-0 mt-2">
+                                <li>Генерация аудио из текста (Text-to-Speech)</li>
+                                <li>Синхронизация движения губ с новым аудио (Wav2Lip)</li>
+                                <li>Создание финального видео</li>
+                            </ol>
+                        </div>
+                        <button id="processBtn" class="btn btn-success">
+                            <i class="fas fa-play me-1"></i>Запустить обработку
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Результат -->
+            {% if project.output_path %}
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-download me-2"></i>Результат
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Обработка завершена! Вы можете скачать результат.</p>
+                        <a href="{{ url_for('download_result', project_id=project.id) }}" 
+                           class="btn btn-success">
+                            <i class="fas fa-download me-1"></i>Скачать результат
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Боковая панель -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Информация
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-user me-2"></i>
+                            <strong>Владелец:</strong> {{ project.user.username }}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock me-2"></i>
+                            <strong>Обновлен:</strong> {{ project.updated_at.strftime('%d.%m.%Y %H:%M') }}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-tasks me-2"></i>
+                            <strong>Задач:</strong> {{ project.tasks|length }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Загрузка файлов
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    formData.append('project_id', '{{ project.id }}');
+    
+    fetch('{{ url_for("upload_files", project_id=project.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка загрузки: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка загрузки файлов');
+    });
+});
+
+// Запуск обработки
+document.getElementById('processBtn')?.addEventListener('click', function() {
+    if (confirm('Запустить обработку проекта?')) {
+        fetch('{{ url_for("process_project", project_id=project.id) }}', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка запуска обработки');
+        });
+    }
+});
+</script>
+{% endblock %}

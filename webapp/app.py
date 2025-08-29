@@ -18,6 +18,13 @@ import subprocess
 import json
 import uuid
 from pathlib import Path
+import pyttsx3
+from gtts import gTTS
+import threading
+import time
+
+# Импорт Wav2Lip процессора
+from wav2lip_processor import process_video_with_wav2lip
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -75,7 +82,8 @@ class Project(db.Model):
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     video_path = db.Column(db.String(500))
-    audio_path = db.Column(db.String(500))
+    text_content = db.Column(db.Text)  # Текст для озвучивания
+    generated_audio_path = db.Column(db.String(500))  # Сгенерированное аудио
     output_path = db.Column(db.String(500))
     status = db.Column(db.String(50), default='pending')
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -118,6 +126,29 @@ class Result(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+def generate_audio_from_text(text, output_path, language='ru'):
+    """Генерация аудио из текста с помощью gTTS"""
+    try:
+        tts = gTTS(text=text, lang=language, slow=False)
+        tts.save(output_path)
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка генерации аудио: {e}")
+        return False
+
+def generate_audio_from_text_local(text, output_path):
+    """Генерация аудио из текста с помощью pyttsx3 (локально)"""
+    try:
+        engine = pyttsx3.init()
+        engine.setProperty('rate', 150)  # Скорость речи
+        engine.setProperty('volume', 0.9)  # Громкость
+        engine.save_to_file(text, output_path)
+        engine.runAndWait()
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка локальной генерации аудио: {e}")
+        return False
 
 # Декоратор для проверки прав администратора
 def admin_required(f):
@@ -264,7 +295,7 @@ def project_detail(project_id):
 @app.route('/project/<int:project_id>/upload', methods=['POST'])
 @login_required
 def upload_files(project_id):
-    """Загрузка файлов для проекта"""
+    """Загрузка файлов и текста для проекта"""
     project = Project.query.get_or_404(project_id)
     
     # Проверка прав доступа
@@ -272,10 +303,13 @@ def upload_files(project_id):
         return jsonify({'error': 'Доступ запрещен'}), 403
     
     video_file = request.files.get('video')
-    audio_file = request.files.get('audio')
+    text_content = request.form.get('text_content', '').strip()
     
-    if not video_file and not audio_file:
-        return jsonify({'error': 'Не выбраны файлы для загрузки'}), 400
+    if not video_file:
+        return jsonify({'error': 'Не выбран видео файл'}), 400
+    
+    if not text_content:
+        return jsonify({'error': 'Не введен текст для озвучивания'}), 400
     
     try:
         # Создание папки для проекта
@@ -283,23 +317,17 @@ def upload_files(project_id):
         os.makedirs(project_folder, exist_ok=True)
         
         # Загрузка видео
-        if video_file:
-            video_filename = secure_filename(f"video_{uuid.uuid4()}.mp4")
-            video_path = os.path.join(project_folder, video_filename)
-            video_file.save(video_path)
-            project.video_path = video_path
+        video_filename = secure_filename(f"video_{uuid.uuid4()}.mp4")
+        video_path = os.path.join(project_folder, video_filename)
+        video_file.save(video_path)
+        project.video_path = video_path
         
-        # Загрузка аудио
-        if audio_file:
-            audio_filename = secure_filename(f"audio_{uuid.uuid4()}.mp3")
-            audio_path = os.path.join(project_folder, audio_filename)
-            audio_file.save(audio_path)
-            project.audio_path = audio_path
-        
-        project.status = 'files_uploaded'
+        # Сохранение текста
+        project.text_content = text_content
+        project.status = 'content_ready'
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Файлы загружены'})
+        return jsonify({'success': True, 'message': 'Видео и текст загружены'})
         
     except Exception as e:
         logger.error(f"Ошибка загрузки файлов: {e}")
@@ -315,15 +343,38 @@ def process_project(project_id):
     if project.user_id != current_user.id and not current_user.is_admin:
         return jsonify({'error': 'Доступ запрещен'}), 403
     
-    if not project.video_path or not project.audio_path:
-        return jsonify({'error': 'Не загружены видео и аудио файлы'}), 400
+    if not project.video_path or not project.text_content:
+        return jsonify({'error': 'Не загружены видео и текст'}), 400
     
     try:
+        # Создание папки для проекта
+        project_folder = os.path.join(app.config['UPLOAD_FOLDER'], str(project.id))
+        os.makedirs(project_folder, exist_ok=True)
+        
+        # Генерация аудио из текста
+        audio_filename = f"generated_audio_{uuid.uuid4()}.mp3"
+        audio_path = os.path.join(project_folder, audio_filename)
+        
+        # Попробуем сначала gTTS (онлайн), потом pyttsx3 (локально)
+        if not generate_audio_from_text(project.text_content, audio_path):
+            if not generate_audio_from_text_local(project.text_content, audio_path):
+                return jsonify({'error': 'Не удалось сгенерировать аудио'}), 500
+        
+        # Сохраняем путь к сгенерированному аудио
+        project.generated_audio_path = audio_path
+        
+        # Создание пути для результата
+        output_filename = f"result_{uuid.uuid4()}.mp4"
+        output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+        
         # Создание задачи обработки
         task = ProcessingTask(
             project_id=project.id,
-            task_type='wav2lip_sync',
+            task_type='text_to_speech_and_sync',
             parameters={
+                'text': project.text_content,
+                'audio_path': audio_path,
+                'output_path': output_path,
                 'fps': 25,
                 'img_size': 96,
                 'batch_size': 1
@@ -338,9 +389,63 @@ def process_project(project_id):
         project.status = 'processing'
         db.session.commit()
         
-        # Запуск обработки в фоне (здесь можно использовать Celery или другой task queue)
-        # Для демонстрации просто изменим статус
-        flash('Обработка запущена!', 'success')
+                # Запуск обработки в отдельном потоке
+        def process_in_background():
+            with app.app_context():
+                try:
+                    logger.info(f"Начинаем обработку проекта {project.id}")
+                    
+                    # Обновляем статус задачи
+                    task.status = 'processing'
+                    task.started_at = datetime.utcnow()
+                    db.session.commit()
+                    
+                    # Запускаем Wav2Lip обработку
+                    success, result = process_video_with_wav2lip(
+                        project.id,
+                        project.video_path,
+                        audio_path,
+                        output_path
+                    )
+                    
+                    if success:
+                        # Обновляем проект
+                        project.output_path = output_path
+                        project.status = 'completed'
+                        
+                        # Обновляем задачу
+                        task.status = 'completed'
+                        task.completed_at = datetime.utcnow()
+                        task.progress = 100
+                        
+                        logger.info(f"Обработка проекта {project.id} завершена успешно")
+                    else:
+                        # Ошибка обработки
+                        project.status = 'failed'
+                        task.status = 'failed'
+                        task.error_message = str(result)
+                        task.completed_at = datetime.utcnow()
+                        
+                        logger.error(f"Ошибка обработки проекта {project.id}: {result}")
+                    
+                    db.session.commit()
+                    
+                except Exception as e:
+                    logger.error(f"Ошибка в фоновой обработке проекта {project.id}: {e}")
+                    
+                    # Обновляем статус при ошибке
+                    project.status = 'failed'
+                    task.status = 'failed'
+                    task.error_message = str(e)
+                    task.completed_at = datetime.utcnow()
+                    db.session.commit()
+        
+        # Запускаем обработку в фоне
+        thread = threading.Thread(target=process_in_background)
+        thread.daemon = True
+        thread.start()
+        
+        flash('Обработка запущена! Генерация аудио и синхронизация Wav2Lip...', 'success')
         
         return jsonify({'success': True, 'task_id': task.id})
         

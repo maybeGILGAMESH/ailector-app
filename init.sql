@@ -3,23 +3,36 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
+-- Создание таблицы для пользователей
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(80) UNIQUE NOT NULL,
+    email VARCHAR(120) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_admin BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP WITH TIME ZONE
+);
+
 -- Создание таблицы для проектов
 CREATE TABLE IF NOT EXISTS projects (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     video_path VARCHAR(500),
-    audio_path VARCHAR(500),
+    text_content TEXT,
+    generated_audio_path VARCHAR(500),
     output_path VARCHAR(500),
     status VARCHAR(50) DEFAULT 'pending',
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Создание таблицы для задач обработки
 CREATE TABLE IF NOT EXISTS processing_tasks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     task_type VARCHAR(100) NOT NULL,
     parameters JSONB,
     status VARCHAR(50) DEFAULT 'queued',
@@ -32,9 +45,9 @@ CREATE TABLE IF NOT EXISTS processing_tasks (
 
 -- Создание таблицы для результатов
 CREATE TABLE IF NOT EXISTS results (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-    task_id UUID REFERENCES processing_tasks(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    task_id INTEGER REFERENCES processing_tasks(id) ON DELETE CASCADE,
     file_path VARCHAR(500),
     file_size BIGINT,
     duration_seconds INTEGER,
@@ -44,7 +57,7 @@ CREATE TABLE IF NOT EXISTS results (
 
 -- Создание таблицы для настроек
 CREATE TABLE IF NOT EXISTS settings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id SERIAL PRIMARY KEY,
     key VARCHAR(255) UNIQUE NOT NULL,
     value TEXT,
     description TEXT,
@@ -52,6 +65,9 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 -- Создание индексов для производительности
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at);
 CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON processing_tasks(project_id);
@@ -79,6 +95,7 @@ SELECT
     p.id,
     p.name,
     p.status,
+    u.username as user_name,
     COUNT(t.id) as total_tasks,
     COUNT(CASE WHEN t.status = 'completed' THEN 1 END) as completed_tasks,
     COUNT(CASE WHEN t.status = 'failed' THEN 1 END) as failed_tasks,
@@ -86,8 +103,9 @@ SELECT
     p.created_at,
     p.updated_at
 FROM projects p
+LEFT JOIN users u ON p.user_id = u.id
 LEFT JOIN processing_tasks t ON p.id = t.project_id
-GROUP BY p.id, p.name, p.status, p.created_at, p.updated_at;
+GROUP BY p.id, p.name, p.status, u.username, p.created_at, p.updated_at;
 
 -- Создание функции для обновления времени
 CREATE OR REPLACE FUNCTION update_updated_at_column()

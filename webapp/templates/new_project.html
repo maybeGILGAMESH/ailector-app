@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Новый проект - Courses Generator{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Создать новый проект
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('new_project') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-tag me-1"></i>Название проекта *
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   required maxlength="255" placeholder="Введите название проекта">
+                            <div class="form-text">Краткое и понятное название для вашего проекта</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Описание
+                            </label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4" placeholder="Опишите ваш проект (необязательно)"></textarea>
+                            <div class="form-text">Дополнительная информация о проекте</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Следующие шаги:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Создание проекта</li>
+                                <li>Загрузка видео и аудио файлов</li>
+                                <li>Настройка параметров обработки</li>
+                                <li>Запуск синхронизации Wav2Lip</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i>Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Создать проект
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Валидация формы
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    if (!name) {
+        e.preventDefault();
+        alert('Пожалуйста, введите название проекта');
+        document.getElementById('name').focus();
+    }
+});
+</script>
+{% endblock %}
