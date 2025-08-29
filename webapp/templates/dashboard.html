@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Дашборд - Courses Generator{% endblock %}
+
+{% block content %}
+<!-- Заголовок -->
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2">
+            <i class="fas fa-tachometer-alt text-primary me-2"></i>
+            Дашборд
+        </h1>
+        <p class="text-muted">Добро пожаловать, {{ current_user.username }}!</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('new_project') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Новый проект
+        </a>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-project-diagram fa-2x text-primary"></i>
+                </div>
+                <h4 class="card-title mb-1">{{ projects|length }}</h4>
+                <p class="card-text text-muted mb-0">Всего проектов</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-clock fa-2x text-warning"></i>
+                </div>
+                <h4 class="card-title mb-1">{{ projects|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                <p class="card-text text-muted mb-0">В ожидании</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-cogs fa-2x text-info"></i>
+                </div>
+                <h4 class="card-title mb-1">{{ projects|selectattr('status', 'equalto', 'processing')|list|length }}</h4>
+                <p class="card-text text-muted mb-0">В обработке</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                </div>
+                <h4 class="card-title mb-1">{{ projects|selectattr('status', 'equalto', 'completed')|list|length }}</h4>
+                <p class="card-text text-muted mb-0">Завершено</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Проекты -->
+<div class="row">
+    <div class="col">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Мои проекты
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Описание</th>
+                                    <th>Статус</th>
+                                    <th>Создан</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                                           class="text-decoration-none fw-bold">
+                                            {{ project.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if project.description %}
+                                            {{ project.description[:50] }}{% if project.description|length > 50 %}...{% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Без описания</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.status == 'pending' %}
+                                            <span class="badge bg-secondary">В ожидании</span>
+                                        {% elif project.status == 'files_uploaded' %}
+                                            <span class="badge bg-info">Файлы загружены</span>
+                                        {% elif project.status == 'processing' %}
+                                            <span class="badge bg-warning">В обработке</span>
+                                        {% elif project.status == 'completed' %}
+                                            <span class="badge bg-success">Завершено</span>
+                                        {% elif project.status == 'failed' %}
+                                            <span class="badge bg-danger">Ошибка</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ project.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ project.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                                               class="btn btn-outline-primary" title="Просмотр">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if project.status == 'completed' and project.output_path %}
+                                                <a href="{{ url_for('download_result', project_id=project.id) }}" 
+                                                   class="btn btn-outline-success" title="Скачать">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">У вас пока нет проектов</h5>
+                        <p class="text-muted">Создайте первый проект для начала работы</p>
+                        <a href="{{ url_for('new_project') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Создать проект
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрые действия -->
+{% if projects %}
+<div class="row mt-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Быстрые действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('new_project') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-plus me-2"></i>Создать новый проект
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="#" class="btn btn-outline-info w-100" onclick="showUploadModal()">
+                            <i class="fas fa-upload me-2"></i>Загрузить файлы
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="#" class="btn btn-outline-success w-100" onclick="showProcessModal()">
+                            <i class="fas fa-play me-2"></i>Запустить обработку
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Последние действия -->
+<div class="row mt-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Последние действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for project in projects[:5] %}
+                    <div class="timeline-item d-flex mb-3">
+                        <div class="timeline-marker me-3">
+                            {% if project.status == 'completed' %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% elif project.status == 'processing' %}
+                                <i class="fas fa-cogs text-warning"></i>
+                            {% elif project.status == 'failed' %}
+                                <i class="fas fa-exclamation-circle text-danger"></i>
+                            {% else %}
+                                <i class="fas fa-circle text-muted"></i>
+                            {% endif %}
+                        </div>
+                        <div class="timeline-content">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ project.name }}</strong>
+                                    <span class="text-muted ms-2">{{ project.status }}</span>
+                                </div>
+                                <small class="text-muted">
+                                    {{ project.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                </small>
+                            </div>
+                            {% if project.description %}
+                                <p class="text-muted mb-0 small">{{ project.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline-item {
+    position: relative;
+}
+
+.timeline-marker {
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.timeline-content {
+    flex: 1;
+}
+
+.timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 30px;
+    bottom: -15px;
+    width: 1px;
+    background-color: #e9ecef;
+}
+</style>
+{% endblock %}

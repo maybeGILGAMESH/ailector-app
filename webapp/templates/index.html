@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Courses Generator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto text-center">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-video text-primary me-3"></i>
+            Courses Generator
+        </h1>
+        <p class="lead mb-5">
+            Профессиональная платформа для синхронизации видео и аудио с использованием 
+            передовых технологий машинного обучения Wav2Lip
+        </p>
+        
+        {% if not current_user.is_authenticated %}
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-5">
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-sm-3">
+                    <i class="fas fa-user-plus me-2"></i>Начать бесплатно
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-sign-in-alt me-2"></i>Войти в систему
+                </a>
+            </div>
+        {% else %}
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center mb-5">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 me-sm-3">
+                    <i class="fas fa-tachometer-alt me-2"></i>Перейти в дашборд
+                </a>
+                <a href="{{ url_for('new_project') }}" class="btn btn-outline-primary btn-lg px-4">
+                    <i class="fas fa-plus me-2"></i>Создать проект
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Возможности -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i class="fas fa-sync-alt fa-2x text-primary"></i>
+                </div>
+                <h5 class="card-title">Синхронизация</h5>
+                <p class="card-text">
+                    Автоматическая синхронизация движения губ в видео с аудио 
+                    с помощью нейронных сетей
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i class="fas fa-upload fa-2x text-success"></i>
+                </div>
+                <h5 class="card-title">Загрузка файлов</h5>
+                <p class="card-text">
+                    Поддержка различных форматов видео и аудио. 
+                    Простая загрузка через веб-интерфейс
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center">
+                <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i class="fas fa-chart-line fa-2x text-info"></i>
+                </div>
+                <h5 class="card-title">Отслеживание</h5>
+                <p class="card-text">
+                    Мониторинг прогресса обработки в реальном времени. 
+                    История проектов и результатов
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Применение -->
+<div class="row mb-5">
+    <div class="col-lg-10 mx-auto">
+        <h2 class="text-center mb-4">Области применения</h2>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-graduation-cap text-primary fa-2x me-3 mt-1"></i>
+                    <div>
+                        <h5>Образование</h5>
+                        <p class="text-muted">
+                            Создание обучающих материалов на разных языках, 
+                            синхронизация лекций и презентаций
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-film text-primary fa-2x me-3 mt-1"></i>
+                    <div>
+                        <h5>Кинематограф</h5>
+                        <p class="text-muted">
+                            Синхронизация дубляжа, исправление проблем 
+                            с синхронизацией в фильмах и сериалах
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-broadcast-tower text-primary fa-2x me-3 mt-1"></i>
+                    <div>
+                        <h5>Медиа</h5>
+                        <p class="text-muted">
+                            Создание контента для социальных сетей, 
+                            блогов и видеоплатформ
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-cogs text-primary fa-2x me-3 mt-1"></i>
+                    <div>
+                        <h5>Разработка</h5>
+                        <p class="text-muted">
+                            Интеграция в собственные приложения через API, 
+                            автоматизация процессов обработки
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Технологии -->
+<div class="row mb-5">
+    <div class="col-lg-8 mx-auto">
+        <h2 class="text-center mb-4">Технологии</h2>
+        <div class="row g-3 text-center">
+            <div class="col-md-3">
+                <div class="p-3 border rounded">
+                    <i class="fab fa-python fa-2x text-primary mb-2"></i>
+                    <h6>Python</h6>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-3 border rounded">
+                    <i class="fas fa-brain fa-2x text-success mb-2"></i>
+                    <h6>PyTorch</h6>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-3 border rounded">
+                    <i class="fas fa-eye fa-2x text-info mb-2"></i>
+                    <h6>OpenCV</h6>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-3 border rounded">
+                    <i class="fas fa-database fa-2x text-warning mb-2"></i>
+                    <h6>PostgreSQL</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-5">
+    <div class="col-lg-8 mx-auto">
+        <h2 class="text-center mb-4">Почему выбирают нас</h2>
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <div class="h1 text-primary mb-2">99%</div>
+                <h6>Точность синхронизации</h6>
+            </div>
+            <div class="col-md-4">
+                <div class="h1 text-success mb-2">24/7</div>
+                <h6>Доступность системы</h6>
+            </div>
+            <div class="col-md-4">
+                <div class="h1 text-info mb-2">5 мин</div>
+                <h6>Среднее время обработки</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA -->
+{% if not current_user.is_authenticated %}
+<div class="row">
+    <div class="col-lg-8 mx-auto text-center">
+        <div class="card bg-primary text-white">
+            <div class="card-body py-5">
+                <h3 class="card-title mb-3">Готовы начать?</h3>
+                <p class="card-text mb-4">
+                    Присоединяйтесь к тысячам пользователей, которые уже используют 
+                    Courses Generator для создания качественного контента
+                </p>
+                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-rocket me-2"></i>Создать аккаунт
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
