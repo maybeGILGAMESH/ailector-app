@@ -1,3 +1,13 @@
+# Временные файлы
+*.tmp
+*.temp
+*.log
+
+# Cookies и тестовые файлы
+cookies.txt
+*_cookies.txt
+test_*.txt
+
 # Python
 __pycache__/
 *.py[cod]
@@ -22,15 +32,13 @@ wheels/
 MANIFEST
 
 # Virtual environments
-venv/
-env/
-ENV/
-courses_env/
-
-# Environment variables
 .env
-config.env
-*.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
 .vscode/
@@ -41,28 +49,26 @@ config.env
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Docker
 .dockerignore
 
-# Logs
-*.log
-logs/
-
 # Database
 *.db
+*.sqlite
 *.sqlite3
 
-# Temporary files
-*.tmp
-*.temp
-temp/
-tmp/
+# Logs
+logs/
+*.log
 
-# Uploads and outputs (will be mounted as volumes)
-uploads/
-outputs/
-
-# Git
-.git/
+# Uploads and outputs (временные файлы)
+webapp/uploads/
+webapp/outputs/
+webapp/temp/
